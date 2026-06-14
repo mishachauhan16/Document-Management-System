@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DMS — Admin Panel</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;}
+
+  /* Sidebar */
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:#1e293b;
+    border-right:1px solid #334155;display:flex;flex-direction:column;z-index:100;}
+  .sidebar-logo{padding:24px 20px;border-bottom:1px solid #334155;}
+  .sidebar-logo .icon{font-size:22px;margin-right:8px;}
+  .sidebar-logo h2{font-size:16px;font-weight:700;color:#f1f5f9;display:inline;}
+  .sidebar-logo p{font-size:11px;color:#475569;margin:4px 0 0;}
+  .sidebar-nav{flex:1;padding:16px 8px;overflow-y:auto;}
+  .nav-section{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;
+    color:#475569;padding:12px 12px 6px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;
+    cursor:pointer;transition:all .15s;font-size:14px;color:#94a3b8;margin-bottom:2px;border:none;background:none;width:100%;text-align:left;}
+  .nav-item:hover{background:#334155;color:#e2e8f0;}
+  .nav-item.active{background:#1d4ed8;color:#fff;}
+  .nav-item .icon{font-size:16px;width:20px;text-align:center;}
+  .sidebar-footer{padding:16px;border-top:1px solid #334155;}
+  .user-chip{display:flex;align-items:center;gap:10px;}
+  .avatar{width:36px;height:36px;background:linear-gradient(135deg,#7c3aed,#4f46e5);
+    border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;}
+  .user-info{flex:1;min-width:0;}
+  .user-info .name{font-size:13px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .user-info .role{font-size:11px;color:#94a3b8;}
+  .logout-btn{background:none;border:none;color:#64748b;cursor:pointer;font-size:16px;padding:4px;transition:color .2s;}
+  .logout-btn:hover{color:#f87171;}
+
+  /* Main content */
+  .main{margin-left:240px;min-height:100vh;display:flex;flex-direction:column;}
+  .topbar{background:#1e293b;border-bottom:1px solid #334155;padding:16px 28px;
+    display:flex;align-items:center;justify-content:space-between;}
+  .topbar h1{font-size:18px;font-weight:700;color:#f1f5f9;}
+  .topbar p{font-size:13px;color:#64748b;margin:0;}
+  .content{padding:24px 28px;flex:1;}
+
+  /* Stats cards */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+  .stat-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;}
+  .stat-card .label{font-size:12px;color:#64748b;font-weight:500;text-transform:uppercase;letter-spacing:.4px;}
+  .stat-card .value{font-size:28px;font-weight:700;margin:8px 0 4px;color:#f1f5f9;}
+  .stat-card .sub{font-size:12px;color:#94a3b8;}
+  .stat-card .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;}
+
+  /* Section card */
+  .section-card{background:#1e293b;border:1px solid #334155;border-radius:12px;overflow:hidden;margin-bottom:24px;}
+  .section-header{padding:18px 22px;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;}
+  .section-header h3{font-size:15px;font-weight:600;color:#f1f5f9;}
+  .section-body{padding:0;}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;}
+  th{padding:10px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.5px;
+    text-transform:uppercase;color:#64748b;background:#0f172a;border-bottom:1px solid #334155;}
+  td{padding:13px 16px;font-size:14px;color:#cbd5e1;border-bottom:1px solid #1e293b;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#0f172a44;}
+  .empty-row td{text-align:center;color:#475569;padding:40px;}
+
+  /* Badges */
+  .badge-role{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.3px;}
+  .badge-admin{background:#1d4ed822;color:#60a5fa;border:1px solid #1d4ed844;}
+  .badge-user{background:#16534422;color:#4ade80;border:1px solid #16534444;}
+  .badge-inactive{background:#7f1d1d22;color:#f87171;border:1px solid #7f1d1d44;}
+  .badge-action{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500;}
+  .badge-login{background:#1d4ed822;color:#93c5fd;}
+  .badge-logout{background:#33415522;color:#94a3b8;}
+  .badge-upload{background:#16534422;color:#4ade80;}
+  .badge-delete{background:#7f1d1d22;color:#f87171;}
+  .badge-view{background:#1e3a5f22;color:#7dd3fc;}
+  .badge-download{background:#1a3a2822;color:#6ee7b7;}
+  .badge-change_password{background:#92400e22;color:#fcd34d;}
+  .badge-create_user{background:#16534422;color:#86efac;}
+  .badge-update_user{background:#1c3f5022;color:#67e8f9;}
+  .badge-delete_user{background:#7f1d1d22;color:#fca5a5;}
+  .badge-share{background:#2d1b6922;color:#c4b5fd;}
+
+  /* Buttons */
+  .btn-sm-primary{background:#1d4ed8;border:none;color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;transition:background .2s;}
+  .btn-sm-primary:hover{background:#2563eb;}
+  .btn-sm-danger{background:#7f1d1d;border:none;color:#fca5a5;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;transition:background .2s;}
+  .btn-sm-danger:hover{background:#991b1b;}
+  .btn-sm-warn{background:#78350f;border:none;color:#fcd34d;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;transition:background .2s;}
+  .btn-sm-warn:hover{background:#92400e;}
+  .btn-main{background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;color:#fff;
+    padding:9px 18px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;}
+  .btn-main:hover{background:linear-gradient(135deg,#3b82f6,#2563eb);}
+
+  /* Modal */
+  .modal-bg{position:fixed;inset:0;background:#00000088;z-index:1000;display:none;align-items:center;justify-content:center;}
+  .modal-bg.open{display:flex;}
+  .modal-box{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:28px;width:100%;max-width:460px;animation:slideIn .2s ease;}
+  .modal-box h3{font-size:17px;font-weight:700;color:#f1f5f9;margin-bottom:4px;}
+  .modal-box p{font-size:13px;color:#64748b;margin-bottom:20px;}
+  .modal-label{font-size:12px;color:#94a3b8;font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;display:block;}
+  .modal-input{background:#0f172a;border:1px solid #334155;color:#f1f5f9;border-radius:8px;padding:10px 14px;font-size:14px;width:100%;transition:border-color .2s;font-family:'Inter',sans-serif;}
+  .modal-input:focus{border-color:#2563eb;outline:none;box-shadow:0 0 0 3px #2563eb22;}
+  .modal-input option{background:#1e293b;}
+  .modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+  .btn-cancel{background:#334155;border:none;color:#94a3b8;padding:9px 16px;border-radius:8px;font-size:14px;cursor:pointer;}
+  .btn-cancel:hover{background:#475569;}
+  .btn-submit{background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;color:#fff;padding:9px 18px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;}
+  .btn-submit:hover{background:linear-gradient(135deg,#3b82f6,#2563eb);}
+  .btn-submit:disabled{opacity:.6;cursor:not-allowed;}
+
+  /* Tab nav */
+  .tab-nav{display:flex;gap:4px;padding:16px 22px 0;}
+  .tab-btn{padding:8px 16px;border-radius:8px 8px 0 0;border:none;background:transparent;
+    color:#64748b;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+  .tab-btn.active{background:#0f172a;color:#60a5fa;border-bottom:2px solid #2563eb;}
+  .tab-btn:hover:not(.active){color:#94a3b8;}
+  .tab-pane{display:none;}
+  .tab-pane.active{display:block;}
+
+  /* Search */
+  .search-input{background:#0f172a;border:1px solid #334155;color:#e2e8f0;border-radius:8px;
+    padding:8px 14px;font-size:13px;font-family:'Inter',sans-serif;transition:border-color .2s;}
+  .search-input:focus{border-color:#2563eb;outline:none;}
+  .search-input::placeholder{color:#475569;}
+
+  /* Tooltip for password hint */
+  .pass-hint{background:#0f172a;border:1px solid #1d4ed8;border-radius:8px;padding:12px 16px;
+    font-size:13px;color:#93c5fd;margin-top:12px;display:none;}
+  .pass-hint.show{display:block;}
+
+  @keyframes slideIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+
+  .pass-reminder{background:#78350f;border:1px solid #92400e;border-radius:10px;
+    padding:12px 20px;display:none;align-items:center;justify-content:space-between;
+    margin-bottom:20px;gap:12px;}
+  .pass-reminder.show{display:flex;}
+  .pass-reminder span{font-size:13px;color:#fcd34d;}
+  .pass-reminder a{color:#fbbf24;font-weight:600;text-decoration:none;font-size:13px;
+    background:#92400e;padding:5px 12px;border-radius:6px;white-space:nowrap;}
+  .pass-reminder a:hover{background:#b45309;}
+  .pass-reminder .close-btn{background:none;border:none;color:#f59e0b;cursor:pointer;font-size:16px;padding:0 4px;}
+
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="icon">📁</span><h2>DMS</h2>
+    <p>Admin Control Panel</p>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Management</div>
+    <button class="nav-item active" onclick="showTab('users')">
+      <span class="icon">👥</span> User Management
+    </button>
+    <button class="nav-item" onclick="showTab('audit')">
+      <span class="icon">📋</span> Audit Trail
+    </button>
+    <div class="nav-section">Navigation</div>
+    <button class="nav-item" onclick="window.location.href='dashboard.html'">
+      <span class="icon">📂</span> Documents
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar" id="adminAvatar">A</div>
+      <div class="user-info">
+        <div class="name" id="adminName">Admin</div>
+        <div class="role">Administrator</div>
+      </div>
+      <button class="logout-btn" onclick="logout()" title="Logout">⏻</button>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <h1 id="pageTitle">User Management</h1>
+      <p id="pageDesc">Create and manage all user accounts</p>
+    </div>
+    <div id="topbarAction">
+      <button class="btn-main" onclick="openCreateModal()">
+        <span>＋</span> New User
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+  <!-- Password change reminder (optional, user's choice) -->
+  <div class="pass-reminder" id="passReminder">
+    <span>💡 You're using the default password. Consider changing it for better security.</span>
+    <a href="/dms/frontend/change-password.html">Change Password</a>
+    <button class="close-btn" onclick="dismissReminder()">✕</button>
+  </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">Total Users</div>
+        <div class="value" id="statUsers">—</div>
+        <div class="sub"><span class="dot" style="background:#60a5fa"></span>All accounts</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Admins</div>
+        <div class="value" id="statAdmins">—</div>
+        <div class="sub"><span class="dot" style="background:#c4b5fd"></span>Admin role</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Active Users</div>
+        <div class="value" id="statActive">—</div>
+        <div class="sub"><span class="dot" style="background:#4ade80"></span>Can log in</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Pending Password</div>
+        <div class="value" id="statPending">—</div>
+        <div class="sub"><span class="dot" style="background:#fcd34d"></span>First login pending</div>
+      </div>
+    </div>
+
+    <!-- Users tab -->
+    <div id="tab-users" class="tab-pane active">
+      <div class="section-card">
+        <div class="section-header">
+          <h3>All Users</h3>
+          <input class="search-input" id="userSearch" placeholder="🔍  Search by name or email..." oninput="filterUsers()" style="width:260px;"/>
+        </div>
+        <div class="section-body">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody">
+              <tr class="empty-row"><td colspan="6">Loading users…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audit tab -->
+    <div id="tab-audit" class="tab-pane">
+      <div class="section-card">
+        <div class="section-header">
+          <h3>Audit Trail</h3>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <select class="search-input" id="auditFilter" onchange="loadAudit()" style="width:160px;">
+              <option value="">All actions</option>
+              <option value="login">Login</option>
+              <option value="logout">Logout</option>
+              <option value="upload">Upload</option>
+              <option value="view">View</option>
+              <option value="download">Download</option>
+              <option value="delete">Delete</option>
+              <option value="share">Share</option>
+              <option value="change_password">Password change</option>
+              <option value="create_user">Create user</option>
+            </select>
+            <button class="btn-main" onclick="loadAudit()" style="padding:7px 14px;font-size:13px;">↻ Refresh</button>
+          </div>
+        </div>
+        <div class="section-body">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Document</th>
+                <th>IP Address</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="auditBody">
+              <tr class="empty-row"><td colspan="6">Loading logs…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- CREATE USER MODAL -->
+<div class="modal-bg" id="createModal">
+  <div class="modal-box">
+    <h3>Create New User</h3>
+    <p>User will be created with the default password: <strong style="color:#93c5fd">Welcome@123</strong></p>
+
+    <div class="mb-3">
+      <label class="modal-label">Full Name</label>
+      <input type="text" id="newName" class="modal-input" placeholder="John Doe"/>
+    </div>
+    <div class="mb-3">
+      <label class="modal-label">Email Address</label>
+      <input type="email" id="newEmail" class="modal-input" placeholder="john@example.com"/>
+    </div>
+    <div class="mb-3">
+      <label class="modal-label">Role</label>
+      <select id="newRole" class="modal-input">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+
+    <div class="pass-hint" id="createSuccess">
+      ✓ User created! They can log in with email and password <strong>Welcome@123</strong>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
+      <button class="btn-submit" id="createBtn" onclick="createUser()">Create User</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT USER MODAL -->
+<div class="modal-bg" id="editModal">
+  <div class="modal-box">
+    <h3>Edit User</h3>
+    <p>Update user details or change their status</p>
+    <input type="hidden" id="editId"/>
+    <div class="mb-3">
+      <label class="modal-label">Full Name</label>
+      <input type="text" id="editName" class="modal-input"/>
+    </div>
+    <div class="mb-3">
+      <label class="modal-label">Role</label>
+      <select id="editRole" class="modal-input">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label class="modal-label">Status</label>
+      <select id="editActive" class="modal-input">
+        <option value="1">Active</option>
+        <option value="0">Deactivated</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-submit" id="editBtn" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script src="/dms/frontend/assets/app.js"></script>
+<script>
+  let allUsers = [];
+  const user = requireLogin(true); // admin only
+  if (user) {
+    document.getElementById('adminName').textContent = user.name;
+    document.getElementById('adminAvatar').textContent = user.name[0].toUpperCase();
+    loadUsers();
+  }
+
+  function showTab(tab) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    event.currentTarget.classList.add('active');
+
+    if (tab === 'users') {
+      document.getElementById('pageTitle').textContent = 'User Management';
+      document.getElementById('pageDesc').textContent  = 'Create and manage all user accounts';
+      document.getElementById('topbarAction').innerHTML = '<button class="btn-main" onclick="openCreateModal()"><span>＋</span> New User</button>';
+    } else if (tab === 'audit') {
+      document.getElementById('pageTitle').textContent = 'Audit Trail';
+      document.getElementById('pageDesc').textContent  = 'Full log of all system activity';
+      document.getElementById('topbarAction').innerHTML = '';
+      loadAudit();
+    }
+  }
+
+  // ---- Users ----
+  async function loadUsers() {
+    const data = await api('/users');
+    if (!data.success) return;
+    allUsers = data.data;
+    renderUsers(allUsers);
+    // Stats
+    document.getElementById('statUsers').textContent   = allUsers.length;
+    document.getElementById('statAdmins').textContent  = allUsers.filter(u => u.role === 'admin').length;
+    document.getElementById('statActive').textContent  = allUsers.filter(u => u.is_active == 1).length;
+    document.getElementById('statPending').textContent = allUsers.filter(u => u.must_change_password == 1).length;
+  }
+
+  function renderUsers(users) {
+    const tbody = document.getElementById('usersBody');
+    if (!users.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No users found</td></tr>'; return; }
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#4f46e5);
+              display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;">
+              ${u.name[0].toUpperCase()}
+            </div>
+            <div>
+              <div style="font-weight:500;color:#e2e8f0;">${esc(u.name)}</div>
+              ${u.must_change_password == 1 ? '<div style="font-size:11px;color:#fcd34d;">⚠ Must change password</div>' : ''}
+            </div>
+          </div>
+        </td>
+        <td style="color:#94a3b8;">${esc(u.email)}</td>
+        <td><span class="badge-role ${u.role === 'admin' ? 'badge-admin' : 'badge-user'}">${u.role}</span></td>
+        <td><span class="badge-role ${u.is_active == 1 ? 'badge-user' : 'badge-inactive'}">${u.is_active == 1 ? 'Active' : 'Inactive'}</span></td>
+        <td style="color:#64748b;font-size:12px;">${new Date(u.created_at).toLocaleDateString()}</td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-sm-primary" onclick="openEditModal(${JSON.stringify(u).replace(/"/g,'&quot;')})">Edit</button>
+            <button class="btn-sm-danger" onclick="deleteUser(${u.id},'${esc(u.name)}')">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function filterUsers() {
+    const q = document.getElementById('userSearch').value.toLowerCase();
+    renderUsers(allUsers.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)));
+  }
+
+  // ---- Create User ----
+  function openCreateModal() {
+    document.getElementById('newName').value  = '';
+    document.getElementById('newEmail').value = '';
+    document.getElementById('newRole').value  = 'user';
+    document.getElementById('createSuccess').classList.remove('show');
+    document.getElementById('createModal').classList.add('open');
+    setTimeout(() => document.getElementById('newName').focus(), 100);
+  }
+  function closeCreateModal() { document.getElementById('createModal').classList.remove('open'); }
+
+  async function createUser() {
+    const name  = document.getElementById('newName').value.trim();
+    const email = document.getElementById('newEmail').value.trim();
+    const role  = document.getElementById('newRole').value;
+    const btn   = document.getElementById('createBtn');
+
+    if (!name || !email) { toast('Name and email are required.', 'error'); return; }
+
+    btn.disabled = true; btn.textContent = 'Creating...';
+    const data = await api('/auth/register', 'POST', { name, email, role });
+    btn.disabled = false; btn.textContent = 'Create User';
+
+    if (data.success) {
+      document.getElementById('createSuccess').classList.add('show');
+      toast(`User ${name} created successfully!`, 'success');
+      loadUsers();
+      setTimeout(closeCreateModal, 2000);
+    } else {
+      toast(data.message || 'Failed to create user.', 'error');
+    }
+  }
+
+  // ---- Edit User ----
+  function openEditModal(u) {
+    document.getElementById('editId').value    = u.id;
+    document.getElementById('editName').value  = u.name;
+    document.getElementById('editRole').value  = u.role;
+    document.getElementById('editActive').value= u.is_active;
+    document.getElementById('editModal').classList.add('open');
+  }
+  function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
+
+  async function saveEdit() {
+    const id     = document.getElementById('editId').value;
+    const name   = document.getElementById('editName').value.trim();
+    const role   = document.getElementById('editRole').value;
+    const active = document.getElementById('editActive').value;
+    const btn    = document.getElementById('editBtn');
+
+    if (!name) { toast('Name is required.', 'error'); return; }
+
+    btn.disabled = true; btn.textContent = 'Saving...';
+    const data = await api(`/users/${id}`, 'PUT', { name, role, is_active: parseInt(active) });
+    btn.disabled = false; btn.textContent = 'Save Changes';
+
+    if (data.success) {
+      toast('User updated.', 'success');
+      closeEditModal();
+      loadUsers();
+    } else {
+      toast(data.message || 'Update failed.', 'error');
+    }
+  }
+
+  // ---- Delete User ----
+  async function deleteUser(id, name) {
+    if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
+    const data = await api(`/users/${id}`, 'DELETE');
+    if (data.success) { toast('User deleted.', 'success'); loadUsers(); }
+    else toast(data.message || 'Delete failed.', 'error');
+  }
+
+  // ---- Audit Log ----
+  async function loadAudit() {
+    const action = document.getElementById('auditFilter')?.value || '';
+    const url    = '/audit?limit=100' + (action ? `&action=${action}` : '');
+    const data   = await api(url);
+    const tbody  = document.getElementById('auditBody');
+    if (!data.success || !data.data.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No audit logs found</td></tr>'; return;
+    }
+    tbody.innerHTML = data.data.map(log => `
+      <tr>
+        <td style="font-size:12px;color:#64748b;white-space:nowrap;">${new Date(log.created_at).toLocaleString()}</td>
+        <td>
+          <div style="font-size:13px;font-weight:500;color:#e2e8f0;">${esc(log.user_name)}</div>
+          <div style="font-size:11px;color:#475569;">${esc(log.user_email)}</div>
+        </td>
+        <td><span class="badge-action badge-${log.action}">${log.action.replace('_',' ')}</span></td>
+        <td style="font-size:12px;color:#94a3b8;">${log.doc_title ? esc(log.doc_title) : '<span style="color:#334155;">—</span>'}</td>
+        <td style="font-size:12px;color:#64748b;font-family:monospace;">${log.ip_address || '—'}</td>
+        <td style="font-size:12px;color:#64748b;">${log.details ? esc(log.details) : '—'}</td>
+      </tr>
+    `).join('');
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Close modals on backdrop click
+  document.getElementById('createModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeCreateModal(); });
+  document.getElementById('editModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditModal(); });
+
+  // Show optional password reminder
+  if (sessionStorage.getItem('show_pass_reminder') === '1') {
+    const r = document.getElementById('passReminder');
+    if (r) r.classList.add('show');
+  }
+  function dismissReminder() {
+    document.getElementById('passReminder').classList.remove('show');
+    sessionStorage.removeItem('show_pass_reminder');
+  }
+
+</script>
+</body>
+</html>

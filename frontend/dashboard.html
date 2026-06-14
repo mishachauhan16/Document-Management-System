@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DMS — Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;}
+  .topbar{background:#1e293b;border-bottom:1px solid #334155;padding:0 28px;height:60px;
+    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  .topbar-left{display:flex;align-items:center;gap:16px;}
+  .logo{font-size:18px;font-weight:700;color:#f1f5f9;display:flex;align-items:center;gap:8px;}
+  .topbar-right{display:flex;align-items:center;gap:12px;}
+  .user-pill{display:flex;align-items:center;gap:8px;background:#334155;border-radius:20px;padding:6px 14px 6px 6px;}
+  .avatar{width:28px;height:28px;background:linear-gradient(135deg,#7c3aed,#4f46e5);
+    border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;}
+  .user-pill span{font-size:13px;color:#e2e8f0;font-weight:500;}
+  .btn-logout{background:none;border:1px solid #334155;color:#94a3b8;padding:7px 14px;
+    border-radius:8px;font-size:13px;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+  .btn-logout:hover{background:#334155;color:#e2e8f0;}
+  .btn-change-pass{background:none;border:1px solid #334155;color:#94a3b8;padding:7px 14px;
+    border-radius:8px;font-size:13px;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+  .btn-change-pass:hover{background:#334155;color:#e2e8f0;}
+  .content{padding:28px;}
+  .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+  .page-header h1{font-size:20px;font-weight:700;color:#f1f5f9;}
+  .page-header p{font-size:13px;color:#64748b;margin-top:2px;}
+  .btn-upload{background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;color:#fff;
+    padding:10px 20px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;transition:all .2s;font-family:'Inter',sans-serif;}
+  .btn-upload:hover{background:linear-gradient(135deg,#3b82f6,#2563eb);}
+  .filters{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+  .filter-btn{background:#1e293b;border:1px solid #334155;color:#94a3b8;padding:7px 16px;
+    border-radius:20px;font-size:13px;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+  .filter-btn.active{background:#1d4ed8;border-color:#1d4ed8;color:#fff;}
+  .filter-btn:hover:not(.active){border-color:#475569;color:#e2e8f0;}
+  .search-bar{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:8px;
+    padding:9px 16px;font-size:14px;font-family:'Inter',sans-serif;width:280px;transition:border-color .2s;}
+  .search-bar:focus{border-color:#2563eb;outline:none;}
+  .search-bar::placeholder{color:#475569;}
+  .doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+  .doc-card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;
+    transition:all .2s;cursor:default;}
+  .doc-card:hover{border-color:#475569;transform:translateY(-2px);box-shadow:0 4px 16px #00000033;}
+  .doc-icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px;}
+  .doc-icon.pdf{background:#7f1d1d22;}
+  .doc-icon.image{background:#164e6322;}
+  .doc-icon.word{background:#1e3a5f22;}
+  .doc-icon.excel{background:#16534422;}
+  .doc-icon.video{background:#2d1b6922;}
+  .doc-icon.other{background:#33415522;}
+  .doc-title{font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:4px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .doc-meta{font-size:12px;color:#64748b;margin-bottom:14px;}
+  .doc-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;
+    margin-bottom:10px;font-weight:500;}
+  .doc-badge.own{background:#1d4ed822;color:#60a5fa;border:1px solid #1d4ed844;}
+  .doc-badge.shared{background:#16534422;color:#4ade80;border:1px solid #16534444;}
+  .doc-actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .btn-action{border:none;padding:5px 10px;border-radius:6px;font-size:12px;cursor:pointer;
+    font-family:'Inter',sans-serif;font-weight:500;transition:all .15s;}
+  .btn-view{background:#1d4ed822;color:#60a5fa;}
+  .btn-view:hover{background:#1d4ed844;}
+  .btn-dl{background:#16534422;color:#4ade80;}
+  .btn-dl:hover{background:#16534444;}
+  .btn-share{background:#2d1b6922;color:#c4b5fd;}
+  .btn-share:hover{background:#2d1b6944;}
+  .btn-del{background:#7f1d1d22;color:#f87171;}
+  .btn-del:hover{background:#7f1d1d44;}
+  .empty-state{text-align:center;padding:80px 20px;color:#475569;}
+  .empty-state .emoji{font-size:48px;margin-bottom:16px;}
+  .empty-state h3{font-size:16px;color:#64748b;margin-bottom:8px;}
+  .modal-bg{position:fixed;inset:0;background:#00000088;z-index:1000;display:none;align-items:center;justify-content:center;}
+  .modal-bg.open{display:flex;}
+  .modal-box{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:28px;width:100%;max-width:440px;animation:slideIn .2s ease;}
+  .modal-box h3{font-size:17px;font-weight:700;color:#f1f5f9;margin-bottom:4px;}
+  .modal-box p{font-size:13px;color:#64748b;margin-bottom:20px;}
+  .modal-label{font-size:12px;color:#94a3b8;font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;display:block;}
+  .modal-input{background:#0f172a;border:1px solid #334155;color:#f1f5f9;border-radius:8px;padding:10px 14px;font-size:14px;width:100%;font-family:'Inter',sans-serif;}
+  .modal-input:focus{border-color:#2563eb;outline:none;box-shadow:0 0 0 3px #2563eb22;}
+  .modal-input option{background:#1e293b;}
+  .modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+  .btn-cancel{background:#334155;border:none;color:#94a3b8;padding:9px 16px;border-radius:8px;font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;}
+  .btn-submit{background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;color:#fff;padding:9px 18px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+
+  .pass-reminder{background:#78350f;border:1px solid #92400e;border-radius:10px;
+    padding:12px 20px;display:none;align-items:center;justify-content:space-between;
+    margin-bottom:20px;gap:12px;}
+  .pass-reminder.show{display:flex;}
+  .pass-reminder span{font-size:13px;color:#fcd34d;}
+  .pass-reminder a{color:#fbbf24;font-weight:600;text-decoration:none;font-size:13px;
+    background:#92400e;padding:5px 12px;border-radius:6px;white-space:nowrap;}
+  .pass-reminder a:hover{background:#b45309;}
+  .pass-reminder .close-btn{background:none;border:none;color:#f59e0b;cursor:pointer;font-size:16px;padding:0 4px;}
+
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="logo">📁 DMS</div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn-change-pass" onclick="window.location.href='change-password.html'">🔐 Change Password</button>
+    <div class="user-pill">
+      <div class="avatar" id="userAvatar">U</div>
+      <span id="userName">User</span>
+    </div>
+    <button class="btn-logout" onclick="logout()">Sign Out</button>
+  </div>
+</header>
+
+<div class="content">
+
+  <!-- Password change reminder (optional, user's choice) -->
+  <div class="pass-reminder" id="passReminder">
+    <span>💡 You're using the default password. Consider changing it for better security.</span>
+    <a href="/dms/frontend/change-password.html">Change Password</a>
+    <button class="close-btn" onclick="dismissReminder()">✕</button>
+  </div>
+
+  <div class="page-header">
+    <div>
+      <h1>My Documents</h1>
+      <p id="docCount">Loading…</p>
+    </div>
+    <button class="btn-upload" onclick="window.location.href='upload.html'">
+      ＋ Upload Document
+    </button>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+    <div class="filters">
+      <button class="filter-btn active" onclick="filterDocs('all',this)">All</button>
+      <button class="filter-btn" onclick="filterDocs('own',this)">My Documents</button>
+      <button class="filter-btn" onclick="filterDocs('shared',this)">Shared with me</button>
+    </div>
+    <input class="search-bar" id="searchBar" placeholder="🔍  Search documents…" oninput="searchDocs()"/>
+  </div>
+
+  <div class="doc-grid" id="docGrid">
+    <div class="empty-state" style="grid-column:1/-1;">
+      <div class="emoji">📂</div>
+      <h3>Loading documents…</h3>
+    </div>
+  </div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal-bg" id="shareModal">
+  <div class="modal-box">
+    <h3>Share Document</h3>
+    <p id="shareDocTitle">Select a user to share with</p>
+    <input type="hidden" id="shareDocId"/>
+    <div class="mb-3">
+      <label class="modal-label">Select User</label>
+      <select id="shareUserId" class="modal-input"></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeShareModal()">Cancel</button>
+      <button class="btn-submit" onclick="doShare()">Share</button>
+    </div>
+  </div>
+</div>
+
+<script src="/dms/frontend/assets/app.js"></script>
+<script>
+  let allDocs = [];
+  let currentFilter = 'all';
+  const currentUser = requireLogin();
+
+  if (currentUser) {
+    document.getElementById('userName').textContent  = currentUser.name;
+    document.getElementById('userAvatar').textContent = currentUser.name[0].toUpperCase();
+    loadDocs();
+  }
+
+  async function loadDocs() {
+    // Placeholder — replace with real API call when DocumentController is built
+    // const data = await api('/documents');
+    // allDocs = data.data || [];
+    allDocs = []; // empty for now
+    renderDocs(allDocs);
+    document.getElementById('docCount').textContent = `${allDocs.length} document${allDocs.length !== 1 ? 's' : ''}`;
+  }
+
+  function getFileIcon(type) {
+    if (!type) return { icon:'📄', cls:'other' };
+    if (type.includes('pdf'))        return { icon:'📕', cls:'pdf' };
+    if (type.includes('image'))      return { icon:'🖼️', cls:'image' };
+    if (type.includes('word') || type.includes('document')) return { icon:'📘', cls:'word' };
+    if (type.includes('sheet') || type.includes('excel'))   return { icon:'📗', cls:'excel' };
+    if (type.includes('video'))      return { icon:'🎬', cls:'video' };
+    return { icon:'📄', cls:'other' };
+  }
+
+  function renderDocs(docs) {
+    const grid = document.getElementById('docGrid');
+    if (!docs.length) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1;">
+          <div class="emoji">📂</div>
+          <h3>No documents here yet</h3>
+          <p style="font-size:13px;margin-top:8px;">Upload your first document to get started</p>
+        </div>`;
+      return;
+    }
+    const isOwner = (doc) => doc.owner_id == currentUser.user_id || currentUser.role === 'admin';
+    grid.innerHTML = docs.map(doc => {
+      const { icon, cls } = getFileIcon(doc.file_type);
+      const own = isOwner(doc);
+      const size = doc.file_size_bytes > 1048576
+        ? (doc.file_size_bytes / 1048576).toFixed(1) + ' MB'
+        : Math.round(doc.file_size_bytes / 1024) + ' KB';
+      return `
+        <div class="doc-card">
+          <div class="doc-icon ${cls}">${icon}</div>
+          <div class="doc-title" title="${esc(doc.title)}">${esc(doc.title)}</div>
+          <div class="doc-meta">${size} · ${new Date(doc.created_at).toLocaleDateString()}</div>
+          <span class="doc-badge ${own ? 'own' : 'shared'}">${own ? 'Mine' : 'Shared'}</span>
+          <div class="doc-actions">
+            <button class="btn-action btn-view"  onclick="viewDoc(${doc.id})">👁 View</button>
+            <button class="btn-action btn-dl"    onclick="downloadDoc(${doc.id})">⬇ Download</button>
+            ${own ? `
+              <button class="btn-action btn-share" onclick="openShareModal(${doc.id},'${esc(doc.title)}')">↗ Share</button>
+              <button class="btn-action btn-del"   onclick="deleteDoc(${doc.id})">🗑 Delete</button>
+            ` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function filterDocs(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilter();
+  }
+
+  function searchDocs() { applyFilter(); }
+
+  function applyFilter() {
+    const q = document.getElementById('searchBar').value.toLowerCase();
+    let docs = allDocs;
+    if (currentFilter === 'own')    docs = docs.filter(d => d.owner_id == currentUser.user_id);
+    if (currentFilter === 'shared') docs = docs.filter(d => d.owner_id != currentUser.user_id);
+    if (q) docs = docs.filter(d => d.title.toLowerCase().includes(q));
+    renderDocs(docs);
+  }
+
+  function viewDoc(id)     { window.open(`/dms/api/documents/${id}/view?token=${Auth.token()}`, '_blank'); }
+  function downloadDoc(id) { window.location.href = `/dms/api/documents/${id}/download?token=${Auth.token()}`; }
+
+  async function deleteDoc(id) {
+    if (!confirm('Move this document to trash?')) return;
+    const data = await api(`/documents/${id}`, 'DELETE');
+    if (data.success) { toast('Document deleted.', 'success'); loadDocs(); }
+    else toast(data.message || 'Delete failed.', 'error');
+  }
+
+  function openShareModal(docId, title) {
+    document.getElementById('shareDocId').value    = docId;
+    document.getElementById('shareDocTitle').textContent = `Sharing: ${title}`;
+    document.getElementById('shareModal').classList.add('open');
+    loadUsersForShare();
+  }
+  function closeShareModal() { document.getElementById('shareModal').classList.remove('open'); }
+
+  async function loadUsersForShare() {
+    const data = await api('/users');
+    const sel  = document.getElementById('shareUserId');
+    if (!data.success) return;
+    sel.innerHTML = data.data
+      .filter(u => u.id != currentUser.user_id)
+      .map(u => `<option value="${u.id}">${esc(u.name)} (${esc(u.email)})</option>`)
+      .join('');
+  }
+
+  async function doShare() {
+    const docId  = document.getElementById('shareDocId').value;
+    const userId = document.getElementById('shareUserId').value;
+    const data   = await api(`/documents/${docId}/share`, 'POST', { shared_with_id: userId });
+    if (data.success) { toast('Document shared!', 'success'); closeShareModal(); }
+    else toast(data.message || 'Share failed.', 'error');
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  document.getElementById('shareModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeShareModal(); });
+
+  // Show optional password reminder
+  if (sessionStorage.getItem('show_pass_reminder') === '1') {
+    const r = document.getElementById('passReminder');
+    if (r) r.classList.add('show');
+  }
+  function dismissReminder() {
+    document.getElementById('passReminder').classList.remove('show');
+    sessionStorage.removeItem('show_pass_reminder');
+  }
+
+</script>
+</body>
+</html>

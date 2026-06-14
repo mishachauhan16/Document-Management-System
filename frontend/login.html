@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DMS — Login</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;background:#0f172a;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+
+  /* Background pattern */
+  body::before{
+    content:'';position:fixed;inset:0;
+    background:radial-gradient(ellipse at 20% 50%, #1e3a5f33 0%, transparent 60%),
+               radial-gradient(ellipse at 80% 20%, #1e4d7b22 0%, transparent 50%);
+    pointer-events:none;
+  }
+
+  .login-wrap{width:100%;max-width:440px;padding:24px;}
+
+  /* Logo area */
+  .logo-block{text-align:center;margin-bottom:32px;}
+  .logo-icon{width:64px;height:64px;background:linear-gradient(135deg,#2563eb,#1e40af);
+    border-radius:16px;display:inline-flex;align-items:center;justify-content:center;
+    font-size:28px;margin-bottom:16px;box-shadow:0 8px 32px #2563eb44;}
+  .logo-block h1{color:#f1f5f9;font-size:24px;font-weight:700;letter-spacing:-.5px;}
+  .logo-block p{color:#64748b;font-size:14px;margin-top:4px;}
+
+  /* Card */
+  .card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:32px;}
+
+  label{color:#94a3b8;font-size:13px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px;display:block;}
+
+  .form-control{
+    background:#0f172a;border:1px solid #334155;color:#f1f5f9;
+    border-radius:8px;padding:12px 16px;font-size:15px;font-family:'Inter',sans-serif;
+    transition:border-color .2s,box-shadow .2s;
+  }
+  .form-control:focus{
+    background:#0f172a;border-color:#2563eb;color:#f1f5f9;
+    box-shadow:0 0 0 3px #2563eb22;outline:none;
+  }
+  .form-control::placeholder{color:#475569;}
+
+  /* Password toggle */
+  .pass-wrap{position:relative;}
+  .pass-wrap .form-control{padding-right:48px;}
+  .eye-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);
+    background:none;border:none;color:#64748b;cursor:pointer;font-size:18px;
+    padding:0;transition:color .2s;}
+  .eye-btn:hover{color:#94a3b8;}
+
+  .btn-login{
+    background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;color:#fff;
+    width:100%;padding:13px;border-radius:8px;font-size:15px;font-weight:600;
+    letter-spacing:.3px;cursor:pointer;transition:all .2s;margin-top:8px;
+  }
+  .btn-login:hover{background:linear-gradient(135deg,#3b82f6,#2563eb);transform:translateY(-1px);box-shadow:0 4px 16px #2563eb44;}
+  .btn-login:active{transform:translateY(0);}
+  .btn-login:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+
+  .alert-box{
+    background:#450a0a;border:1px solid #7f1d1d;color:#fca5a5;
+    border-radius:8px;padding:12px 16px;font-size:13px;margin-bottom:16px;display:none;
+  }
+
+  .divider{border-color:#334155;margin:20px 0;}
+
+  .default-hint{
+    background:#0f172a;border:1px solid #334155;border-radius:8px;
+    padding:12px 16px;font-size:12px;color:#64748b;line-height:1.6;
+  }
+  .default-hint strong{color:#94a3b8;}
+
+  @keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="login-wrap">
+
+  <div class="logo-block">
+    <div class="logo-icon">📁</div>
+    <h1>Document Management</h1>
+    <p>Sign in to access your workspace</p>
+  </div>
+
+  <div class="card">
+    <div class="alert-box" id="alertBox"></div>
+
+    <div class="mb-4">
+      <label for="email">Email Address</label>
+      <input type="email" id="email" class="form-control" placeholder="you@example.com" autocomplete="email" autofocus/>
+    </div>
+
+    <div class="mb-4">
+      <label for="password">Password</label>
+      <div class="pass-wrap">
+        <input type="password" id="password" class="form-control" placeholder="Enter your password" autocomplete="current-password"/>
+        <button class="eye-btn" onclick="togglePass()" type="button" id="eyeBtn">👁</button>
+      </div>
+    </div>
+
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">Sign In</button>
+
+    <hr class="divider"/>
+
+    <div class="default-hint">
+      <strong>First time signing in?</strong><br/>
+      If your account was just created by admin, use the default password:<br/>
+      <strong>Welcome@123</strong> — you will be asked to set a new password.
+    </div>
+  </div>
+
+</div>
+
+<script src="/dms/frontend/assets/app.js"></script>
+<script>
+  // Redirect if already logged in
+  if (Auth.isLoggedIn()) {
+    const u = Auth.user();
+    window.location.href = u.role === 'admin' ? '/dms/frontend/admin.html' : '/dms/frontend/dashboard.html';
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  function togglePass() {
+    const inp = document.getElementById('password');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  async function doLogin() {
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn      = document.getElementById('loginBtn');
+    const alertBox = document.getElementById('alertBox');
+
+    alertBox.style.display = 'none';
+
+    if (!email || !password) { showErr('Please enter your email and password.'); return; }
+
+    btn.disabled    = true;
+    btn.textContent = 'Signing in...';
+
+    try {
+      const data = await api('/auth/login', 'POST', { email, password });
+
+      if (data.success) {
+        Auth.save(data.token, data.user);
+        // Show soft reminder if password not yet changed — user's choice
+        if (data.user.must_change_password) {
+          sessionStorage.setItem('show_pass_reminder', '1');
+        }
+        window.location.href = data.user.role === 'admin'
+          ? '/dms/frontend/admin.html'
+          : '/dms/frontend/dashboard.html';
+      } else {
+        showErr(data.message || 'Login failed.');
+      }
+    } catch (e) {
+      showErr('Cannot reach server. Make sure your local server is running.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+  }
+
+  function showErr(msg) {
+    const b = document.getElementById('alertBox');
+    b.textContent = msg;
+    b.style.display = 'block';
+  }
+</script>
+</body>
+</html>
