@@ -11,11 +11,6 @@ define('DB_PASS',  '');  // ← your MySQL password
 define('JWT_SECRET',         'DMS_SUPER_SECRET_KEY_CHANGE_IN_PROD_2025!@#');
 define('JWT_EXPIRY_HOURS',   24);
 
-define('UPLOAD_DIR',         __DIR__ . '/../../uploads/');
-define('COMPRESS_DIR',       __DIR__ . '/../../uploads/compressed/');
-define('COMPRESS_THRESHOLD', 10 * 1024 * 1024);   // 10 MB
-define('MAX_FILE_SIZE',      100 * 1024 * 1024);  // 100 MB
-
 define('DEFAULT_PASSWORD',   'Welcome@123');  // all new users get this
 
 function getDB(): PDO {
