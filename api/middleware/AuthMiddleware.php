@@ -29,3 +29,30 @@ function requireAdmin(): array {
     }
     return $u;
 }
+// ---- Check if user can access a specific document ----
+// True if: admin, OR owner, OR doc shared with them
+function canAccessDocument(int $userId, string $role, int $docId): bool {
+    if ($role === 'admin') return true;
+
+    $db = getDB();
+
+    $stmt = $db->prepare('SELECT id FROM documents WHERE id = ? AND owner_id = ? AND deleted_at IS NULL');
+    $stmt->execute([$docId, $userId]);
+    if ($stmt->fetch()) return true;
+
+    $stmt = $db->prepare('SELECT id FROM shares WHERE doc_id = ? AND shared_with_id = ?');
+    $stmt->execute([$docId, $userId]);
+    if ($stmt->fetch()) return true;
+
+    return false;
+}
+
+// ---- Check if user owns the document (for edit/delete/share) ----
+function isDocumentOwner(int $userId, string $role, int $docId): bool {
+    if ($role === 'admin') return true;
+
+    $db   = getDB();
+    $stmt = $db->prepare('SELECT id FROM documents WHERE id = ? AND owner_id = ? AND deleted_at IS NULL');
+    $stmt->execute([$docId, $userId]);
+    return (bool) $stmt->fetch();
+}

@@ -12,6 +12,8 @@ define('JWT_SECRET',         'DMS_SUPER_SECRET_KEY_CHANGE_IN_PROD_2025!@#');
 define('JWT_EXPIRY_HOURS',   24);
 
 define('DEFAULT_PASSWORD',   'Welcome@123');  // all new users get this
+define('UPLOAD_DIR', __DIR__ . '/../../uploads/');
+define('MAX_FILE_SIZE', 50 * 1024 * 1024);  // 50 MB limit
 
 function getDB(): PDO {
     static $pdo = null;

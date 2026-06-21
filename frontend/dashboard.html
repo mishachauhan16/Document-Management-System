@@ -121,10 +121,11 @@
   </div>
 
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-    <div class="filters">
-      <button class="filter-btn active" onclick="filterDocs('all',this)">All</button>
-      <button class="filter-btn" onclick="filterDocs('own',this)">My Documents</button>
-      <button class="filter-btn" onclick="filterDocs('shared',this)">Shared with me</button>
+  <div class="filters">
+  <button class="filter-btn active" onclick="filterDocs('all',this)">All</button>
+  <button class="filter-btn" onclick="filterDocs('own',this)">My Documents</button>
+  <button class="filter-btn" onclick="filterDocs('shared',this)">Shared with me</button>
+  <button class="filter-btn" onclick="filterDocs('deleted',this)">🗑 Deleted</button>
     </div>
     <input class="search-bar" id="searchBar" placeholder="🔍  Search documents…" oninput="searchDocs()"/>
   </div>
@@ -162,19 +163,39 @@
   const currentUser = requireLogin();
 
   if (currentUser) {
-    document.getElementById('userName').textContent  = currentUser.name;
-    document.getElementById('userAvatar').textContent = currentUser.name[0].toUpperCase();
     loadDocs();
   }
 
-  async function loadDocs() {
-    // Placeholder — replace with real API call when DocumentController is built
-    // const data = await api('/documents');
-    // allDocs = data.data || [];
-    allDocs = []; // empty for now
+async function loadDocs() {
+    const data = await api('/documents');
+    allDocs = data.success ? data.data : [];
     renderDocs(allDocs);
     document.getElementById('docCount').textContent = `${allDocs.length} document${allDocs.length !== 1 ? 's' : ''}`;
-  }
+}
+let viewingTrash = false;
+let trashDocs = [];
+
+async function loadMyTrash() {
+    const data = await api('/documents/trash');
+    if (!data.success) { trashDocs = []; return; }
+    // Filter to only show current user's own deleted docs (unless admin)
+    trashDocs = currentUser.role === 'admin'
+        ? data.data
+        : data.data.filter(d => String(d.owner_id) === String(currentUser.id));
+}
+
+async function restoreDoc(id) {
+    const data = await api(`/documents/${id}/restore`, 'POST');
+    if (data.success) {
+        toast('Document restored!', 'success');
+        await loadDocs();
+        await loadMyTrash();
+        renderDocs(trashDocs);
+        document.getElementById('docCount').textContent = `${trashDocs.length} deleted document${trashDocs.length !== 1 ? 's' : ''}`;
+    } else {
+        toast(data.message || 'Restore failed.', 'error');
+    }
+}
 
   function getFileIcon(type) {
     if (!type) return { icon:'📄', cls:'other' };
@@ -186,30 +207,46 @@
     return { icon:'📄', cls:'other' };
   }
 
-  function renderDocs(docs) {
+function renderDocs(docs) {
     const grid = document.getElementById('docGrid');
     if (!docs.length) {
       grid.innerHTML = `
         <div class="empty-state" style="grid-column:1/-1;">
           <div class="emoji">📂</div>
-          <h3>No documents here yet</h3>
-          <p style="font-size:13px;margin-top:8px;">Upload your first document to get started</p>
+          <h3>${viewingTrash ? 'No deleted documents' : 'No documents here yet'}</h3>
+          <p style="font-size:13px;margin-top:8px;">${viewingTrash ? 'Deleted documents will show up here' : 'Upload your first document to get started'}</p>
         </div>`;
       return;
     }
-    const isOwner = (doc) => doc.owner_id == currentUser.user_id || currentUser.role === 'admin';
+    const isActualOwner = (doc) => String(doc.owner_id) === String(currentUser.id);
+    const canManage = (doc) => isActualOwner(doc) || currentUser.role === 'admin';
     grid.innerHTML = docs.map(doc => {
       const { icon, cls } = getFileIcon(doc.file_type);
-      const own = isOwner(doc);
+      const actuallyOwned = isActualOwner(doc);
+      const own = canManage(doc);
       const size = doc.file_size_bytes > 1048576
         ? (doc.file_size_bytes / 1048576).toFixed(1) + ' MB'
         : Math.round(doc.file_size_bytes / 1024) + ' KB';
+
+      if (viewingTrash) {
+        return `
+          <div class="doc-card">
+            <div class="doc-icon ${cls}">${icon}</div>
+            <div class="doc-title" title="${esc(doc.title)}">${esc(doc.title)}</div>
+            <div class="doc-meta">${size} · Deleted ${new Date(doc.deleted_at).toLocaleDateString()}</div>
+            <span class="doc-badge own" style="background:#7f1d1d22;color:#f87171;border-color:#7f1d1d44;">Deleted</span>
+            <div class="doc-actions">
+              <button class="btn-action btn-dl" onclick="restoreDoc(${doc.id})">↺ Restore</button>
+            </div>
+          </div>`;
+      }
+
       return `
         <div class="doc-card">
           <div class="doc-icon ${cls}">${icon}</div>
           <div class="doc-title" title="${esc(doc.title)}">${esc(doc.title)}</div>
           <div class="doc-meta">${size} · ${new Date(doc.created_at).toLocaleDateString()}</div>
-          <span class="doc-badge ${own ? 'own' : 'shared'}">${own ? 'Mine' : 'Shared'}</span>
+          <span class="doc-badge ${actuallyOwned ? 'own' : 'shared'}">${actuallyOwned ? 'Mine' : (currentUser.role === 'admin' ? 'Owner: ' + esc(doc.owner_name) : 'Shared')}</span>
           <div class="doc-actions">
             <button class="btn-action btn-view"  onclick="viewDoc(${doc.id})">👁 View</button>
             <button class="btn-action btn-dl"    onclick="downloadDoc(${doc.id})">⬇ Download</button>
@@ -220,22 +257,31 @@
           </div>
         </div>`;
     }).join('');
-  }
-
-  function filterDocs(filter, btn) {
+}
+ 
+  async function filterDocs(filter, btn) {
     currentFilter = filter;
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    applyFilter();
-  }
+
+    if (filter === 'deleted') {
+        viewingTrash = true;
+        await loadMyTrash();
+        renderDocs(trashDocs);
+        document.getElementById('docCount').textContent = `${trashDocs.length} deleted document${trashDocs.length !== 1 ? 's' : ''}`;
+    } else {
+        viewingTrash = false;
+        applyFilter();
+    }
+}
 
   function searchDocs() { applyFilter(); }
 
   function applyFilter() {
     const q = document.getElementById('searchBar').value.toLowerCase();
     let docs = allDocs;
-    if (currentFilter === 'own')    docs = docs.filter(d => d.owner_id == currentUser.user_id);
-    if (currentFilter === 'shared') docs = docs.filter(d => d.owner_id != currentUser.user_id);
+    if (currentFilter === 'own')    docs = docs.filter(d => String(d.owner_id) === String(currentUser.id));
+    if (currentFilter === 'shared') docs = docs.filter(d => String(d.owner_id) !== String(currentUser.id));
     if (q) docs = docs.filter(d => d.title.toLowerCase().includes(q));
     renderDocs(docs);
   }
@@ -246,9 +292,14 @@
   async function deleteDoc(id) {
     if (!confirm('Move this document to trash?')) return;
     const data = await api(`/documents/${id}`, 'DELETE');
-    if (data.success) { toast('Document deleted.', 'success'); loadDocs(); }
-    else toast(data.message || 'Delete failed.', 'error');
-  }
+    if (data.success) {
+        toast('Document deleted.', 'success');
+        await loadDocs();
+        applyFilter();
+    } else {
+        toast(data.message || 'Delete failed.', 'error');
+    }
+}
 
   function openShareModal(docId, title) {
     document.getElementById('shareDocId').value    = docId;
@@ -268,13 +319,19 @@
       .join('');
   }
 
-  async function doShare() {
+async function doShare() {
     const docId  = document.getElementById('shareDocId').value;
     const userId = document.getElementById('shareUserId').value;
     const data   = await api(`/documents/${docId}/share`, 'POST', { shared_with_id: userId });
-    if (data.success) { toast('Document shared!', 'success'); closeShareModal(); }
-    else toast(data.message || 'Share failed.', 'error');
-  }
+    if (data.success) {
+        toast('Document shared!', 'success');
+        closeShareModal();
+        await loadDocs();
+        applyFilter();
+    } else {
+        toast(data.message || 'Share failed.', 'error');
+    }
+}
 
   function esc(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DMS — Upload Document</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:#0f172a;min-height:100vh;color:#e2e8f0;}
+  .page-center{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 58px);padding:24px;}
+  .wrap{width:100%;max-width:520px;}
+  .header{text-align:center;margin-bottom:24px;}
+  .header h1{font-size:22px;font-weight:700;color:#f1f5f9;}
+  .header p{font-size:13px;color:#64748b;margin-top:4px;}
+  .card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:28px;}
+  label{color:#94a3b8;font-size:12px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;display:block;}
+  .form-control{background:#0f172a;border:1px solid #334155;color:#f1f5f9;border-radius:8px;padding:11px 14px;font-size:14px;width:100%;font-family:'Inter',sans-serif;}
+  .form-control:focus{border-color:#2563eb;outline:none;box-shadow:0 0 0 3px #2563eb22;}
+  .drop-zone{border:2px dashed #334155;border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:18px;}
+  .drop-zone:hover, .drop-zone.dragover{border-color:#2563eb;background:#1d4ed811;}
+  .drop-zone .icon{font-size:32px;margin-bottom:8px;}
+  .drop-zone p{font-size:13px;color:#94a3b8;margin:0;}
+  .drop-zone .filename{color:#60a5fa;font-weight:600;margin-top:8px;font-size:13px;word-break:break-all;}
+  .progress-wrap{display:none;margin-top:14px;}
+  .progress-wrap.show{display:block;}
+  .progress-bar-bg{background:#0f172a;border-radius:8px;height:8px;overflow:hidden;}
+  .progress-bar-fill{background:linear-gradient(90deg,#2563eb,#1d4ed8);height:100%;width:0%;transition:width .2s;}
+  .progress-label{font-size:12px;color:#64748b;margin-top:6px;}
+  .btn-submit{background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;color:#fff;width:100%;
+    padding:12px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:18px;transition:all .2s;}
+  .btn-submit:hover{background:linear-gradient(135deg,#3b82f6,#2563eb);}
+  .btn-submit:disabled{opacity:.6;cursor:not-allowed;}
+  .alert-box{background:#450a0a;border:1px solid #7f1d1d;color:#fca5a5;border-radius:8px;padding:12px;font-size:13px;margin-bottom:16px;display:none;}
+  .success-box{background:#052e16;border:1px solid #166534;color:#86efac;border-radius:8px;padding:12px;font-size:13px;margin-bottom:16px;display:none;}
+  input[type=file]{display:none;}
+</style>
+</head>
+<body>
+
+<div class="page-center">
+  <div class="wrap">
+    <div class="header">
+      <h1>📤 Upload Document</h1>
+      <p>Any file type — PDF, image, Word, Excel, video, etc.</p>
+    </div>
+
+    <div class="card">
+      <div class="alert-box" id="alertBox"></div>
+      <div class="success-box" id="successBox"></div>
+
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <div class="icon">📁</div>
+        <p id="dropText">Click to choose a file or drag it here</p>
+        <div class="filename" id="fileName"></div>
+        <input type="file" id="fileInput" onchange="onFileSelected()"/>
+      </div>
+
+      <label>Document Title (optional)</label>
+      <input type="text" id="titleInput" class="form-control" placeholder="Leave empty to use file name"/>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+        <div class="progress-label" id="progressLabel">Uploading...</div>
+      </div>
+
+      <button class="btn-submit" id="uploadBtn" onclick="doUpload()" disabled>Upload Document</button>
+    </div>
+  </div>
+</div>
+
+<script src="/dms/frontend/assets/app.js"></script>
+<script src="/dms/frontend/assets/navbar.js"></script>
+<script>
+  const user = requireLogin();
+  let selectedFile = null;
+
+  const dropZone = document.getElementById('dropZone');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) {
+      document.getElementById('fileInput').files = e.dataTransfer.files;
+      onFileSelected();
+    }
+  });
+
+  function onFileSelected() {
+    const input = document.getElementById('fileInput');
+    if (!input.files.length) return;
+    selectedFile = input.files[0];
+    document.getElementById('fileName').textContent = `${selectedFile.name}  (${formatSize(selectedFile.size)})`;
+    document.getElementById('dropText').textContent = 'File selected — click to change';
+    document.getElementById('uploadBtn').disabled = false;
+  }
+
+  function formatSize(bytes) {
+    if (bytes > 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
+    return Math.round(bytes / 1024) + ' KB';
+  }
+
+  async function doUpload() {
+    if (!selectedFile) { showErr('Please choose a file first.'); return; }
+
+    hideAlerts();
+    const btn = document.getElementById('uploadBtn');
+    btn.disabled = true;
+    btn.textContent = 'Uploading...';
+
+    const progressWrap = document.getElementById('progressWrap');
+    const progressFill = document.getElementById('progressFill');
+    const progressLabel = document.getElementById('progressLabel');
+    progressWrap.classList.add('show');
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('title', document.getElementById('titleInput').value.trim());
+
+    try {
+      const result = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', API + '/documents/upload');
+        xhr.setRequestHeader('Authorization', `Bearer ${Auth.token()}`);
+
+        xhr.upload.onprogress = e => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            progressFill.style.width = pct + '%';
+            progressLabel.textContent = `Uploading... ${pct}%`;
+          }
+        };
+        xhr.onload = () => {
+          try { resolve(JSON.parse(xhr.responseText)); }
+          catch { reject(new Error('Invalid server response')); }
+        };
+        xhr.onerror = () => reject(new Error('Upload failed'));
+        xhr.send(formData);
+      });
+
+      if (result.success) {
+        progressLabel.textContent = 'Upload complete!';
+        document.getElementById('successBox').textContent = 'Document uploaded successfully! Redirecting...';
+        document.getElementById('successBox').style.display = 'block';
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+      } else {
+        showErr(result.message || 'Upload failed.');
+        btn.disabled = false;
+        btn.textContent = 'Upload Document';
+      }
+    } catch (e) {
+      showErr('Could not reach server. Please try again.');
+      btn.disabled = false;
+      btn.textContent = 'Upload Document';
+    }
+  }
+
+  function showErr(m) { const b = document.getElementById('alertBox'); b.textContent = m; b.style.display = 'block'; }
+  function hideAlerts() {
+    document.getElementById('alertBox').style.display = 'none';
+    document.getElementById('successBox').style.display = 'none';
+  }
+</script>
+</body>
+</html>
