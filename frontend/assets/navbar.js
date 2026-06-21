@@ -126,7 +126,7 @@ function injectNavbar() {
       }
     </style>
 
-    <a class="nav-logo" onclick="goHome()">
+    <a class="nav-logo" href="login.html" onclick="Auth.clear()">
       <div class="logo-icon">📁</div>
       <div>
         <span>DMS</span>
@@ -161,9 +161,9 @@ function injectNavbar() {
 }
 
 function goHome() {
+  Auth.clear();
   window.location.href = 'login.html';
 }
-
 function isCurrentPage(name) {
   return window.location.pathname.includes(name);
 }

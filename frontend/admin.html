@@ -358,8 +358,6 @@
   let allUsers = [];
   const user = requireLogin(true); // admin only
   if (user) {
-    document.getElementById('adminName').textContent = user.name;
-    document.getElementById('adminAvatar').textContent = user.name[0].toUpperCase();
     loadUsers();
   }
 
