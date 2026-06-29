@@ -152,7 +152,7 @@
 <aside class="sidebar">
   <div class="sidebar-logo">
     <span class="icon">📁</span><h2>DMS</h2>
-    <p>Admin Control Panel</p>
+    <p style="font-size:11px;color:#475569;letter-spacing:.5px;text-transform:uppercase;font-weight:500;margin:4px 0 0;">Admin Control Panel</p>
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section">Management</div>
@@ -534,10 +534,11 @@
   document.getElementById('editModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditModal(); });
 
   // Show optional password reminder
-  if (sessionStorage.getItem('show_pass_reminder') === '1') {
+  const _u = Auth.user();
+  if (sessionStorage.getItem('show_pass_reminder') === '1' && _u && _u.must_change_password) {
     const r = document.getElementById('passReminder');
     if (r) r.classList.add('show');
-  }
+}
   function dismissReminder() {
     document.getElementById('passReminder').classList.remove('show');
     sessionStorage.removeItem('show_pass_reminder');

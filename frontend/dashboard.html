@@ -302,6 +302,7 @@ function renderDocs(docs) {
 }
 
   function openShareModal(docId, title) {
+    console.log('Opening share modal for doc:', docId, 'title:', title);
     document.getElementById('shareDocId').value    = docId;
     document.getElementById('shareDocTitle').textContent = `Sharing: ${title}`;
     document.getElementById('shareModal').classList.add('open');
@@ -310,7 +311,7 @@ function renderDocs(docs) {
   function closeShareModal() { document.getElementById('shareModal').classList.remove('open'); }
 
   async function loadUsersForShare() {
-    const data = await api('/users');
+    const data = await api('/documents/users-list');
     const sel  = document.getElementById('shareUserId');
     if (!data.success) return;
     sel.innerHTML = data.data
@@ -340,10 +341,11 @@ async function doShare() {
   document.getElementById('shareModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeShareModal(); });
 
   // Show optional password reminder
-  if (sessionStorage.getItem('show_pass_reminder') === '1') {
+  const _u = Auth.user();
+  if (sessionStorage.getItem('show_pass_reminder') === '1' && _u && _u.must_change_password) {
     const r = document.getElementById('passReminder');
     if (r) r.classList.add('show');
-  }
+}
   function dismissReminder() {
     document.getElementById('passReminder').classList.remove('show');
     sessionStorage.removeItem('show_pass_reminder');

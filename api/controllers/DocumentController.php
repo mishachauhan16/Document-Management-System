@@ -359,3 +359,18 @@ function getDocumentShares(int $id): void {
 
     echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
 }
+// -------------------------------------------------------
+// GET /api/documents/users-list
+// Returns basic user list for sharing (any logged-in user)
+// -------------------------------------------------------
+function getUsersForShare(): void {
+    $user = requireAuth();
+    $db   = getDB();
+    $stmt = $db->prepare(
+    'SELECT id, name, email FROM users 
+     WHERE id != ? AND is_active = 1 AND role = "user"
+     ORDER BY name ASC'
+    );
+    $stmt->execute([$user['user_id']]);
+    echo json_encode(['success' => true, 'data' => $stmt->fetchAll()]);
+}

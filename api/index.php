@@ -46,6 +46,7 @@ if ($parts[0] === 'users') {
 if ($parts[0] === 'documents') {
     // /documents/upload
     if ($method === 'POST' && ($parts[1] ?? '') === 'upload') { uploadDocument(); exit; }
+    if ($method === 'GET' && ($parts[1] ?? '') === 'users-list') { getUsersForShare(); exit; }
     // /documents/trash
     if ($method === 'GET' && ($parts[1] ?? '') === 'trash') { listTrash(); exit; }
     // /documents/{id}/view
